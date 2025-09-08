@@ -8,15 +8,16 @@ on:
   # Allow manual trigger
   workflow_dispatch:
     inputs:
-      config_file:
-        description: 'Path to pages configuration JSON file'
-        required: false
-        default: 'pages-config.json'
       output_dir:
         description: 'Output directory for fetched pages'
         required: false
-        default: 'fetched-pages'
-  
+        default: 'pages'
+      index_dir:
+        description: 'Output directory for fetched pages'
+        required: false
+        default: 'index'
+
+
   # Run on push to main branch if config file changes
   push:
     branches: [ main ]
