@@ -23,7 +23,7 @@ on:
     branches: [ main ]
     paths:
       - 'tools/index/fetch-pages.js'
-      - '.github/workflows/page-indexer.yml'
+      - '.github/workflows/page-indexer.yaml'
 
 jobs:
   build-index:
