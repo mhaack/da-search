@@ -106,7 +106,6 @@ export default function decorateSearchPanel(container) {
       window.hlx.pagefind = await import(
         `${window.hlx.codeBasePath}/index/pagefind.js`
       );
-      await window.hlx.pagefind.search('');
     }
 
     try {
@@ -135,6 +134,9 @@ export default function decorateSearchPanel(container) {
   // Add input event listener with debouncing
   searchInput.addEventListener('input', (e) => {
     const query = e.target.value.trim();
+    if (window.hlx.pagefind) {
+      window.hlx.pagefind.preload(query);
+    }
     debounceSearch(() => handleSearch(query), 300); // 300ms delay
   });
 
@@ -146,8 +148,15 @@ export default function decorateSearchPanel(container) {
   });
 
   // Focus handler
-  searchInput.addEventListener('focus', (e) => {
+  searchInput.addEventListener('focus', async (e) => {
     document.body.classList.add('search-focused');
+
+    // load pagefind on the initial search
+    if (!window.hlx.pagefind) {
+      window.hlx.pagefind = await import(
+        `${window.hlx.codeBasePath}/index/pagefind.js`
+      );
+    }
 
     // If there's text in the input and no results showing, trigger search
     const query = e.target.value.trim();
