@@ -262,9 +262,11 @@ header nav .nav-sections ul>li>ul>li {
 /* tools */
 header nav .nav-tools {
   grid-area: tools;
+  position: relative;
+  filter: none !important;
 }
 
-
+/* Search panel styles */
 header nav .nav-tools #search {
   background-color: transparent;
   border: none;
@@ -272,44 +274,22 @@ header nav .nav-tools #search {
   margin: 0;
 }
 
-/* Search input field styles */
-header nav .nav-tools .header-search-input {
-  background-color: #f5f5f5; /* Light grey background */
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  padding: 8px 12px;
-  font-size: 14px;
-  transition: all 0.2s ease-in-out;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-header nav .nav-tools .header-search-input:focus {
-  background-color: transparent; /* Remove background when focused */
-  border-color: #28a745; /* Green border when focused */
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.2); /* Subtle green glow */
-}
-
-header nav .nav-tools .header-search-input:hover {
-  border-color: #bbb;
-}
-
 /* Search results styles */
 .search-results {
   position: absolute;
-  top: calc(100% + 5px); /* Move down 5px from the input field */
-  right: 0; /* Right align to the search field */
-  left: auto; /* Override left positioning */
+  top: calc(100% + 5px);
+  right: 0;
+  left: auto;
   background: white;
   border: 1px solid #ddd;
-  border-radius: 4px; /* Add border radius to all corners */
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  box-shadow: 0 4px 6px rgb(0 0 0 / 10%);
   max-height: 500px;
   overflow-y: auto;
   z-index: 1000;
   display: none;
-  min-width: 300px; /* Set minimum width */
+  min-width: 300px;
+  max-width: 80vw;
 }
 
 .search-results:not(:empty) {
@@ -317,13 +297,13 @@ header nav .nav-tools .header-search-input:hover {
 }
 
 /* Make search results wider but keep them right-aligned */
-@media (min-width: 768px) {
+@media (width >= 768px) {
   .search-results {
     width: calc(100% + 100px);
   }
 }
 
-@media (min-width: 1024px) {
+@media (width >= 1024px) {
   .search-results {
     width: calc(100% + 400px);
   }
@@ -359,23 +339,14 @@ header nav .nav-tools .header-search-input:hover {
 }
 
 .search-result-title {
-  margin: 0 0 8px 0;
+  margin: 0 0 8px;
   font-size: 16px;
   font-weight: 600;
 }
 
-.search-result-title a {
-  color: #007bff;
-  text-decoration: none;
-}
-
-.search-result-title a:hover {
-  text-decoration: underline;
-}
-
 /* Search result excerpt styling with CSS truncation */
 .search-result-excerpt {
-  margin: 0 0 8px 0;
+  margin: 0 0 8px;
   font-size: 14px;
   color: #666;
   line-height: 1.4;
@@ -404,22 +375,39 @@ header nav .nav-tools .header-search-input:hover {
   color: #dc3545;
 }
 
-/* Position the search container relatively for absolute positioning of results */
-header nav .nav-tools {
-  position: relative;
-}
-
 /* Add blur effect when search is focused - only blur main and footer */
 body.search-focused main,
 body.search-focused footer {
   filter: blur(2px);
-  background-color: rgba(0, 0, 0, 0.1);
+  background-color: rgb(0 0 0 / 10%);
   transition: filter 0.3s ease, background-color 0.3s ease;
 }
 
 /* Ensure search elements stay sharp */
-.nav-wrapper,
-.search-results,
-.header-search-input {
+header nav .nav-tools .search-results,
+header nav .nav-tools .header-search-input {
   filter: none !important;
+}
+
+/* Search input field styles */
+header nav .nav-tools .header-search-input {
+  background-color: #f5f5f5; /* Light grey background */
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-size: 14px;
+  transition: all 0.2s ease-in-out;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+header nav .nav-tools .header-search-input:focus {
+  background-color: transparent; /* Remove background when focused */
+  border-color: #28a745; /* Green border when focused */
+  outline: none;
+  box-shadow: 0 0 0 2px rgb(40 167 69 / 20%); /* Subtle green glow */
+}
+
+header nav .nav-tools .header-search-input:hover {
+  border-color: #bbb;
 }

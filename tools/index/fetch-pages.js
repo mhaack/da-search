@@ -33,76 +33,52 @@ function fetch(url) {
   });
 }
 
-// /**
-//  * Fetch HTML content from a URL
-//  * @param {string} url - The URL to fetch
-//  * @returns {Promise<string>} - The HTML content
-//  */
-// function fetchHTML(url) {
-//   return new Promise((resolve, reject) => {
-//     const parsedUrl = new URL(url);
-//     const client = parsedUrl.protocol === "https:" ? https : http;
-
-//     const request = client.get(url, (response) => {
-//       if (response.statusCode < 200 || response.statusCode >= 300) {
-//         reject(
-//           new Error(`HTTP ${response.statusCode}: ${response.statusMessage}`)
-//         );
-//         return;
-//       }
-
-//       let data = "";
-//       response.on("data", (chunk) => {
-//         data += chunk;
-//       });
-
-//       response.on("end", () => {
-//         resolve(data);
-//       });
-//     });
-
-//     request.on("error", reject);
-//     request.setTimeout(10000, () => {
-//       request.destroy();
-//       reject(new Error("Request timeout"));
-//     });
-//   });
-// }
-
-function saveHtmlFile(outputDir, pagePath, content, lastModified) {
+function saveHtmlFile(config, pagePath, content, lastModified) {
   const fileName =
     pagePath === "/" ? "index.html" : `${pagePath.replace(/\//g, "_")}.html`;
-  const filePath = path.join(outputDir, fileName);
+  const filePath = path.join(config.outputDir, fileName);
 
   // Convert Unix timestamp to ISO format
   // Create the meta tag for last-modified with pagefind sort attribute
   const isoDate = new Date(lastModified * 1000).toISOString();
-  const lastModifiedMeta = ` <meta name="last-modified" content="${isoDate}" data-pagefind-sort="date[content]">`;
+  const lastModifiedMeta = `<meta name="last-modified" content="${isoDate}" data-pagefind-sort="date[content]">`;
 
-  // Create the canonical URL for this page
-  const canonicalUrl = `https://docs.da.live${pagePath}`;
 
   // Insert the meta tag and modify canonical link
   let modifiedContent = content;
 
   // First, add the last-modified meta tag
   const headEndIndex = content.indexOf("</head>");
-
   if (headEndIndex !== -1) {
     modifiedContent =
       content.substring(0, headEndIndex) +
-      lastModifiedMeta +
-      "\n" +
+      `${lastModifiedMeta}\n` +
       content.substring(headEndIndex);
   }
 
+  // Add the filters meta tags
+  if (config.filters?.length > 0) {
+    // for each filter, find the meta tag in the head and add the filter data attribute
+    config.filters.forEach(filter => {
+      const tagRegex = new RegExp(`<meta name="${filter}" content="([^"]*)">`);
+      if (tagRegex.test(modifiedContent)) {
+        modifiedContent = modifiedContent.replace(
+          tagRegex,
+          (match, contentValue) =>
+            `<meta name="${filter}" content="${contentValue}" data-pagefind-filter="${filter}[content]">`
+        );
+      }
+    });
+  }
+
+  // Create the canonical URL for this page
+  const canonicalUrl = `${config.baseUrl}${pagePath}`;
+
   // Then, find and modify the canonical link to include data-pagefind-meta
   const canonicalRegex = /<link rel="canonical" href="[^"]*">/;
-
   if (canonicalRegex.test(modifiedContent)) {
     modifiedContent = modifiedContent.replace(
       canonicalRegex,
-
       `<link rel="canonical" href="${canonicalUrl}" data-pagefind-meta="url[href]">`
     );
   } else {
@@ -133,32 +109,45 @@ async function ensureDir(dir) {
 }
 
 /**
+ * Load configuration from file
+ * @param {string} configPath - Path to the configuration file
+ * @returns {Object} - Configuration object
+ */
+function loadConfig(configPath) {
+  try {
+    const configData = fs.readFileSync(configPath, 'utf8');
+    return JSON.parse(configData);
+  } catch (error) {
+    console.error(`Error loading config file ${configPath}:`, error.message);
+    process.exit(1);
+  }
+}
+
+/**
  * Main function to fetch pages and prepare for Pagefind
  */
 async function main() {
   try {
-    // config
-    const config = {
-      baseUrl: 'https://docs.da.live',
-      outputDir: './pages',
-      delay: 100,
-      timeout: 10000,
-      skipPatterns: ['/about/release-notes']
-    };
+    // Get config file path from command line arguments
+    const configPath = process.argv[2] || path.join(__dirname, 'indexer-config.json');
+    
+    // Load configuration
+    const config = loadConfig(configPath);
+    if (!config.baseUrl || !config.indexUrl || !config.outputDir) {
+      throw new Error("baseUrl, indexUrl, and outputDir are required in the config file");
+    }
+    console.log(`Using config from: ${configPath}`);
 
     // fetch the query index
-    const indexData = await fetch("https://docs.da.live/query-index.json");
+    const indexData = await fetch(config.indexUrl);
     const index = JSON.parse(indexData);
     if (!index.data || !Array.isArray(index.data)) {
-      throw new Error("Unexpected index format");
+      throw new Error("Unexpected AEM index format");
     }
     console.log(`Found ${index.data.length} pages to process`);
 
-    // Create output directory
+    // Create output directory and process each page
     await ensureDir(config.outputDir);
-    console.log(`Created output directory: ${config.outputDir}`);
-
-    // Process each page
     const aemIndex = index.data;
     const results = [];
     for (let i = 0; i < aemIndex.length; i++) {
@@ -167,7 +156,7 @@ async function main() {
 
       // Skip release notes pages
       if (config.skipPatterns.some(pattern => pagePath.startsWith(pattern))) {
-        console.log(`Skipping ampage: ${pagePath}`);
+        console.log(`Skipping path: ${pagePath}`);
         results.push({
           pagePath,
           status: "skipped",
@@ -176,7 +165,7 @@ async function main() {
       }
 
       try {
-        // Add progress bar or percentage
+        // track progress
         const progress = ((i + 1) / aemIndex.length * 100).toFixed(1);
         console.log(`[${i + 1}/${aemIndex.length}] (${progress}%) Fetching: ${pagePath}`);
 
@@ -187,7 +176,7 @@ async function main() {
         const htmlContent = await fetch(pageUrl);
 
         // Save to file with lastModified timestamp
-        saveHtmlFile(config.outputDir, pagePath, htmlContent, page.lastModified);
+        saveHtmlFile(config, pagePath, htmlContent, page.lastModified);
         results.push({
           pagePath,
           status: "success",
@@ -209,15 +198,9 @@ async function main() {
 
     console.log("\nFetch Summary:");
     console.log(`  Total pages: ${aemIndex.length}`);
-    console.log(
-      `  Successful: ${results.filter((r) => r.status === "success").length}`
-    );
-    console.log(
-      `  Skipped: ${results.filter((r) => r.status === "skipped").length}`
-    );
-    console.log(
-      `  Failed: ${results.filter((r) => r.status === "error").length}`
-    );
+    console.log(`  Successful: ${results.filter((r) => r.status === "success").length}`);
+    console.log(`  Skipped: ${results.filter((r) => r.status === "skipped").length}`);
+    console.log(`  Failed: ${results.filter((r) => r.status === "error").length}`);
   } catch (error) {
     console.error("Error:", error.message);
     process.exit(1);

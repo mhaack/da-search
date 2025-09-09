@@ -23,6 +23,7 @@ on:
     branches: [ main ]
     paths:
       - 'tools/index/fetch-pages.js'
+      - 'tools/index/indexer-config.json'
       - '.github/workflows/page-indexer.yaml'
 
 jobs:
@@ -50,13 +51,11 @@ jobs:
         
     - name: Fetch HTML pages
       run: |
-        node ./tools/index/fetch-pages.js
+        node ./tools/index/fetch-pages.js ./tools/index/indexer-config.json
     
     - name: Run Pagefind indexing
       run: |
         echo "Running Pagefind on $OUTPUT_DIR..."
-    - name: Run Pagefind indexing
-      run: |
         npx pagefind --site "$OUTPUT_DIR" --output-path "$INDEX_DIR" --force-language en
         
         echo "Pagefind index created in $INDEX_DIR"
