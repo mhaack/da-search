@@ -1,12 +1,8 @@
 /**
- * Search functionality for the header
- */
-
-/**
  * Decorates the search panel with input and results functionality
  * @param {Element} container The container element for the search panel
  */
-export function decorateSearchPanel(container) {
+export default function decorateSearchPanel(container) {
   container.innerHTML = '';
 
   const searchPanel = document.createElement('div');
@@ -110,6 +106,7 @@ export function decorateSearchPanel(container) {
       window.hlx.pagefind = await import(
         `${window.hlx.codeBasePath}/index/pagefind.js`
       );
+      await window.hlx.pagefind.search('');
     }
 
     try {
